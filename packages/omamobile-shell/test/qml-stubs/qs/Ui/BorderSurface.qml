@@ -2,4 +2,4 @@
 import QtQuick
 
 // Omarchy's BorderSurface is a Rectangle with border specs; no input.
-Rectangle {}
+Rectangle { property var borderSpec: null }

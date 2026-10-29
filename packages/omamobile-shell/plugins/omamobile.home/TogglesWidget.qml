@@ -94,9 +94,10 @@ Item {
           }
         }
 
-        MouseArea {
+        HoldArea {
           id: touch
           anchors.fill: parent
+          home: widget.home
           enabled: !widget.editing
           onClicked: widget.tap(modelData.name)
         }

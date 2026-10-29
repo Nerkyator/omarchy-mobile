@@ -424,7 +424,10 @@ wallpaper, swiped sideways, with page dots above the dock.
 * **Apps** launch the way the drawer does (`omamobile-launch app`: Omarchy's
   `uwsm-app -- gtk-launch`, on a screen of their own). An app that is no longer
   installed stays, dimmed, until you remove it: its package may come back.
-* **Edit mode.** Long-press anywhere (empty space, an app, a widget). Then
+* **Edit mode.** Long-press anywhere (empty space, an app, a widget), with a
+  finger, a mouse or a touchpad; the item held doesn't open. A mouse's hold
+  on an OWL widget's controls or in a widget of your own is theirs: hold
+  empty space instead. Then
   drag an item to move it (dropped on an item of the same size, the two swap;
   on a bigger one, it takes the nearest free cell; dragged past the left or
   right edge, it moves to that page, making a new page on the right), drag

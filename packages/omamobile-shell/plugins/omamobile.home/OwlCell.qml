@@ -48,10 +48,15 @@ Item {
   }
 
   // The tile's own onTap, under the nodes (a node that handles taps wins).
+  // It takes the press, so a mouse or touchpad hold asks for edit mode
+  // here, as HoldArea does; a finger's asks through Home.qml's touch
+  // overlay (#147).
   TapHandler {
     enabled: owlCell.running && !owlCell.editing && !owl.screenOpen && !!owl.tree && !!owl.tree.onTap
     gesturePolicy: TapHandler.ReleaseWithinBounds
+    longPressThreshold: 0.5
     onTapped: function(point) { owl.runHandler(owl.tree.onTap, [point.position.x / owlCell.dp, point.position.y / owlCell.dp]) }
+    onLongPressed: if (point.device.type !== PointerDevice.TouchScreen && owlCell.home) owlCell.home.requestEdit()
   }
 
   // The screen's title and the way back, as our built-ins show their
@@ -77,7 +82,7 @@ Item {
       font.bold: true
       elide: Text.ElideRight
     }
-    MouseArea { anchors.fill: parent; enabled: !owlCell.editing; onClicked: owl.closeScreen() }
+    HoldArea { anchors.fill: parent; home: owlCell.home; enabled: !owlCell.editing; onClicked: owl.closeScreen() }
   }
 
   Owl.OwlView {
@@ -219,8 +224,9 @@ Item {
     }
   }
 
-  MouseArea {
+  HoldArea {
     anchors.fill: parent
+    home: owlCell.home
     visible: owlCell.showsCard
     enabled: !owlCell.editing
     onClicked: {

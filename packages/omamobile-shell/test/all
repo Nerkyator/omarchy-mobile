@@ -421,6 +421,26 @@ elif [[ $rc != 0 ]]; then
 else
   pass "the shade under touch: a swipe forgets one, a short one springs back, a tap taps, a drag scrolls"
 fi
+# The home with a mouse (#147): the long-press overlay takes a finger only,
+# since its passive grab kept a mouse press from every MouseArea under it,
+# and tiles and widgets tap through HoldArea, which edits on a mouse hold and
+# clicks nothing after any hold. test/home-touch drives the real Home.qml.
+hm=plugins/omamobile.home
+grep -c 'acceptedDevices: PointerDevice.TouchScreen' "$hm/Home.qml" >/dev/null || fail "the home's long-press overlay takes a finger only"
+# Qt types a pointer under Hyprland as a touchpad, which the test can't send.
+grep -c 'acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad' "$hm/Home.qml" >/dev/null || fail "a mouse or touchpad hold on the home's empty space edits"
+grep -c 'point.device.type !== PointerDevice.TouchScreen' "$hm/OwlCell.qml" >/dev/null || fail "a mouse or touchpad hold on an OWL widget edits"
+if grep -n 'MouseArea' "$hm/AppTile.qml" "$hm"/*Widget.qml "$hm/UserWidgetCell.qml" "$hm/OwlCell.qml" >&2; then
+  fail "home tiles and widgets tap through HoldArea"
+fi
+rc=0; out=$(bash test/home-touch 2>&1) || rc=$?
+if [[ $rc == 77 ]]; then
+  pass "the home under a mouse and touch # SKIP no qmltestrunner"
+elif [[ $rc != 0 ]]; then
+  printf '%s\n' "$out" | grep -vE '^(PASS|QDEBUG)' >&2; fail "the home under a mouse and touch (test/home-touch)"
+else
+  pass "the home under a mouse and touch: a click or a tap opens an app or taps a widget or an OWL widget, a hold edits once and opens nothing, a slow tap that drifts still opens, a drag pages"
+fi
 if command -v node >/dev/null; then
   node -e '
 const L = require("./plugins/omamobile.launcher/LauncherModel.js")

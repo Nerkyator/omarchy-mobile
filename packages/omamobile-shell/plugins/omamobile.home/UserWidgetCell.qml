@@ -163,8 +163,9 @@ Item {
     }
   }
 
-  MouseArea {
+  HoldArea {
     anchors.fill: parent
+    home: frame.home
     visible: frame.card.state !== "ok"
     enabled: !frame.editing
     onClicked: if (frame.home && frame.entry) frame.home.openSettings(frame.entry.id)

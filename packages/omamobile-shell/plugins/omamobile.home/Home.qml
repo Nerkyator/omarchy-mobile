@@ -1190,13 +1190,20 @@ Item {
       }
 
       // ---------- long-press anywhere: edit mode
-      // On top of everything and passive (DragThreshold takes no grab), so
-      // apps and widgets still get their taps and the pager its swipes; a
-      // drag cancels it.
+      // A finger's hold. On top of everything and passive (DragThreshold
+      // takes no grab), so apps and widgets still get their taps and the
+      // pager its swipes; a drag cancels it. Touch only: a mouse press it
+      // had grabbed passively reached no MouseArea under it and not the
+      // pager, so a mouse could neither open an app nor swipe (#147). A
+      // mouse or touchpad hold asks through HoldArea on apps and built-in
+      // widgets, OwlCell's tap on an OWL widget, and the page's empty space;
+      // on an OWL widget's controls or in a widget of your own, a mouse's
+      // hold is theirs.
       Item {
         anchors.fill: pager
         z: 50
         TapHandler {
+          acceptedDevices: PointerDevice.TouchScreen
           enabled: !root.editing && root.sheet === ""
           gesturePolicy: TapHandler.DragThreshold
           longPressThreshold: 0.5
@@ -1290,11 +1297,23 @@ Item {
     property var preview: null
 
     // Empty space in edit mode: a tap leaves it, a swipe changes page.
+    // Outside it, a mouse or touchpad hold enters it, as a finger's does
+    // through the touch overlay (#147). It has to be here, inside the page:
+    // the pager takes a mouse press, so a handler under it never sees one.
+    // Keep TouchPad: under Hyprland, which offers pointer gestures, Qt types
+    // every pointer as a touchpad, a mouse and phone-mirror's included.
     Item {
       anchors.fill: parent
       TapHandler {
         enabled: root.editing
         onTapped: root.setEditing(false)
+      }
+      TapHandler {
+        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+        enabled: !root.editing && root.sheet === ""
+        gesturePolicy: TapHandler.DragThreshold
+        longPressThreshold: 0.5
+        onLongPressed: root.requestEdit()
       }
       DragHandler {
         enabled: root.editing

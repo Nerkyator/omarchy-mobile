@@ -134,9 +134,10 @@ Item {
             font.family: Style.font.family
             font.pixelSize: Style.font.iconLarge + 4
           }
-          MouseArea {
+          HoldArea {
             id: tap
             anchors.fill: parent
+            home: widget.home
             enabled: parent.usable && !widget.editing
             onClicked: {
               var p = widget.player

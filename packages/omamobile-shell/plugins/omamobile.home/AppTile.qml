@@ -67,9 +67,11 @@ Item {
     maximumLineCount: 1
   }
 
-  MouseArea {
+  // A click launches; a hold asks for edit mode and launches nothing.
+  HoldArea {
     id: touch
     anchors.fill: parent
+    home: tile.home
     enabled: !tile.editing
     onClicked: {
       if (!tile.home) return

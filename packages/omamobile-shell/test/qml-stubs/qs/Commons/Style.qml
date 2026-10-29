@@ -11,14 +11,20 @@ QtObject {
     property int body: 14
     property int subtitle: 16
     property int title: 18
+    property int heading: 22
     property int iconLarge: 18
   }
   property QtObject spacing: QtObject {
     property int xxs: 2
     property int xs: 4
+    property int sm: 6
     property int md: 8
     property int lg: 12
+    property int xl: 16
+    property int xxl: 20
   }
   function space(px) { return Math.round(px) }
+  property color normalFill: Qt.rgba(1, 1, 1, 0.08)
+  function selectedFillFor(foreground, accent, urgent) { return Qt.rgba(1, 1, 1, 0.16) }
   function pressedFillFor(foreground, accent, urgent) { return Qt.rgba(1, 1, 1, 0.2) }
 }

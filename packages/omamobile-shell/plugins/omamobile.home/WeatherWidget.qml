@@ -141,8 +141,9 @@ Item {
     }
   }
 
-  MouseArea {
+  HoldArea {
     anchors.fill: parent
+    home: widget.home
     enabled: !widget.editing
     onClicked: {
       if ((!widget.configured || !widget.coords) && widget.home) widget.home.openSettings(widget.entry.id)

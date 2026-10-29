@@ -90,8 +90,9 @@ Item {
     }
   }
 
-  MouseArea {
+  HoldArea {
     anchors.fill: parent
+    home: widget.home
     enabled: !widget.editing
     onClicked: {
       var tap = String(widget.config.tap || "").trim()

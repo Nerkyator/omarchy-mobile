@@ -7,4 +7,7 @@ QtObject {
   property string shellDir: "/stub/shell"
   property var executed: []
   function execDetached(argv) { executed = executed.concat([argv]) }
+  property var screens: []
+  // Every variable is unset, so a plugin's paths lead nowhere.
+  function env(name) { return "" }
 }
