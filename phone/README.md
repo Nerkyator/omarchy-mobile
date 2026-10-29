@@ -24,6 +24,18 @@ The session has the package's `bin/` on `PATH`, so apps launch through
 computer (`omamobile-bt-agent`, `omamobile-fp-enroll`, `omamobile-set-pin`)
 are replaced by stand-ins in `dev/bin` that refuse to run.
 
+The shell runs from an Omarchy tree of its own, `~/android/phone-dev/omarchy`:
+a copy of your Omarchy's shell, with everything else linked to your Omarchy.
+`OMARCHY_PATH` points there in the session, so `omarchy-shell` (and the
+panels it opens, such as recents) reaches the nested shell and never your
+desktop's. A `dev/bin` stand-in keeps that working in a terminal, whose bash
+resets `OMARCHY_PATH`, and another refuses `omarchy-restart-shell`, which
+would restart your desktop's shell. From a desktop terminal, reach the
+nested shell with
+`OMARCHY_PATH=~/android/phone-dev/omarchy WAYLAND_DISPLAY=wayland-N omarchy-shell …`.
+Harnesses from before this kept the copy in `~/android/phone-dev/shell`;
+nothing uses it now, so it can be deleted.
+
 ## Layout
 
 | Path | What it is |

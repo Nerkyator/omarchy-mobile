@@ -8,14 +8,39 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$(readlink -f "$0")")/../.." && pwd)"
-DEV="${PHONE_DEV:-$HOME/android/phone-dev}"
-OMARCHY_PATH="${OMARCHY_PATH:-/usr/share/omarchy}"
+# Absolute and without a trailing slash: omarchy-shell finds the shell by
+# this exact string (qs ipc, and from Omarchy 4.5 the shell's socket name)
+DEV="$(realpath -m -- "${PHONE_DEV:-$HOME/android/phone-dev}")"
+OMARCHY_SRC="$(readlink -f -- "${OMARCHY_PATH:-/usr/share/omarchy}")"
+LAYOUT="$DEV/omarchy"
 FAKE_HOME="$DEV/home"
 
-# A private copy of the shell gives it its own config path, so IPC calls
-# can't reach the desktop's running shell by accident (and vice versa)
-mkdir -p "$DEV"
-rsync -a --delete "$OMARCHY_PATH/shell/" "$DEV/shell/"
+if [[ -n ${PHONE_DEV_OMARCHY_PATH:-} ]]; then
+  echo "run-desktop: run it from the desktop, not from inside the harness" >&2
+  exit 1
+fi
+if [[ ! -f $OMARCHY_SRC/shell/shell.qml ]]; then
+  echo "run-desktop: no Omarchy shell in $OMARCHY_SRC" >&2
+  exit 1
+fi
+
+# The nested session's own Omarchy tree. Its shell is a private copy, which
+# gives it its own config path, so IPC calls can't reach the desktop's
+# running shell by accident (and vice versa); the rest links to the real
+# tree. OMARCHY_PATH points here in the nested session, so omarchy-shell
+# finds the nested shell at $OMARCHY_PATH/shell.
+mkdir -p "$LAYOUT"
+rsync -a --delete "$OMARCHY_SRC/shell/" "$LAYOUT/shell/"
+for entry in "$OMARCHY_SRC"/*; do
+  name=${entry##*/}
+  [[ $name == shell ]] && continue
+  # ln -sfn onto a real directory would put the link inside it
+  if [[ -L $LAYOUT/$name || ! -e $LAYOUT/$name ]]; then
+    ln -sfn "$entry" "$LAYOUT/$name"
+  fi
+done
+# Links to what a newer Omarchy no longer has
+find "$LAYOUT" -mindepth 1 -maxdepth 1 -xtype l -delete
 
 mkdir -p "$FAKE_HOME/.config/omarchy" "$FAKE_HOME/.local/state/omarchy"
 ln -sfn "$HOME/.local/state/omarchy/current" "$FAKE_HOME/.local/state/omarchy/current"
@@ -46,5 +71,10 @@ print(c[-1]["address"] if c else "")')
 # this computer
 export PATH="$ROOT/phone/dev/bin:$ROOT/packages/omamobile-shell/bin:$PATH"
 
-export PHONE_DEV_SHELL_CMD="env HOME=$FAKE_HOME OMARCHY_PATH=$OMARCHY_PATH quickshell -p $DEV/shell"
+# The nested session's Omarchy, for everything it starts. An interactive
+# bash sets OMARCHY_PATH back to the system's (Omarchy's env-bootstrap), so
+# dev/bin's omarchy-shell takes it from PHONE_DEV_OMARCHY_PATH.
+export OMARCHY_PATH="$LAYOUT" PHONE_DEV_OMARCHY_PATH="$LAYOUT"
+
+export PHONE_DEV_SHELL_CMD="env HOME=$FAKE_HOME OMARCHY_PATH=$OMARCHY_PATH quickshell -p $OMARCHY_PATH/shell"
 exec env -u HYPRLAND_INSTANCE_SIGNATURE Hyprland -c "$ROOT/phone/dev/hyprland.lua"
