@@ -19,6 +19,11 @@ real `~/.config/omarchy` is never touched. Plugin edits hot-reload.
 
 Inside the window, `ALT+Return` opens a terminal.
 
+The session has the package's `bin/` on `PATH`, so apps launch through
+`omamobile-launch` as on the phone. The helpers that would act on this
+computer (`omamobile-bt-agent`, `omamobile-fp-enroll`, `omamobile-set-pin`)
+are replaced by stand-ins in `dev/bin` that refuse to run.
+
 ## Layout
 
 | Path | What it is |
@@ -26,4 +31,4 @@ Inside the window, `ALT+Return` opens a terminal.
 | `profile/shell.json` | Phone layout for the shell (bar, plugins, idle) |
 | `plugins/` | Phone plugins: status bar, quick settings, launcher and agent bar ([plugins/README.md](plugins/README.md)) |
 | `screenshots/` | The phone profile in the desktop harness |
-| `dev/` | Desktop harness: nested Hyprland config and launcher |
+| `dev/` | Desktop harness: nested Hyprland config, launcher, and stand-ins for helpers that would act on the desktop (`dev/bin`) |

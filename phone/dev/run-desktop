@@ -41,5 +41,10 @@ print(c[-1]["address"] if c else "")')
   done
 ) &
 
+# The phone package's commands, as on the phone (every launch goes through
+# omamobile-launch), behind dev/bin's stand-ins for those that would act on
+# this computer
+export PATH="$ROOT/phone/dev/bin:$ROOT/packages/omamobile-shell/bin:$PATH"
+
 export PHONE_DEV_SHELL_CMD="env HOME=$FAKE_HOME OMARCHY_PATH=$OMARCHY_PATH quickshell -p $DEV/shell"
 exec env -u HYPRLAND_INSTANCE_SIGNATURE Hyprland -c "$ROOT/phone/dev/hyprland.lua"
