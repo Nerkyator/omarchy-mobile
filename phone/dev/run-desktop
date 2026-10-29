@@ -23,8 +23,30 @@ ln -sfn "$ROOT/packages/omamobile-shell/plugins" "$FAKE_HOME/.config/omarchy/plu
 # Copied, not linked: the shell writes to shell.json when settings change
 cp "$ROOT/packages/omamobile-shell/profile/shell.json" "$FAKE_HOME/.config/omarchy/shell.json"
 
-# Once the nested window appears on the desktop, float it at the phone's
-# 13:6 aspect. Uses the desktop compositor's own dispatchers; no config changes.
+# Size the window to the screen: the largest 6n x 13n (the phone's 13:6
+# shape) that fits the focused monitor beside its bars, with n a multiple of
+# 10 up to 100. The nested monitor's scale n/80 keeps 480x1040 logical
+# pixels like the real phone. With n a multiple of 10 the scale is a multiple
+# of 1/8, exact in floating point, so Hyprland finds the logical size whole
+# and keeps the scale; at other n it can come out a hair off, and Hyprland
+# then picks another scale. n = 100 is 600x1300 at scale 1.25.
+read -r W H SCALE < <(hyprctl monitors -j 2>/dev/null | python3 -I -c 'import json,sys
+try:
+    m = next(x for x in json.load(sys.stdin) if x["focused"])
+    w, h = m["width"] / m["scale"], m["height"] / m["scale"]
+    if m["transform"] % 2:
+        w, h = h, w
+    l, t, r, b = m["reserved"]
+    # 24 leaves room for the border and a little space around the window
+    n = min(100, int(w - l - r - 24) // 6, int(h - t - b - 24) // 13) // 10 * 10
+except Exception:
+    n = 100
+n = max(n, 20)
+print(6 * n, 13 * n, n / 80)')
+export PHONE_DEV_MODE="${W}x$H" PHONE_DEV_SCALE="$SCALE"
+
+# Once the nested window appears on the desktop, float it at that size.
+# Uses the desktop compositor's own dispatchers; no config changes.
 (
   for _ in $(seq 1 50); do
     addr=$(hyprctl clients -j 2>/dev/null | python3 -I -c 'import json,sys
@@ -33,7 +55,7 @@ print(c[-1]["address"] if c else "")')
     if [[ -n "$addr" ]]; then
       w="address:$addr"
       hyprctl dispatch "hl.dsp.window.float({ window = \"$w\", action = \"enable\" })" >/dev/null
-      hyprctl dispatch "hl.dsp.window.resize({ window = \"$w\", x = 600, y = 1300 })" >/dev/null
+      hyprctl dispatch "hl.dsp.window.resize({ window = \"$w\", x = $W, y = $H })" >/dev/null
       hyprctl dispatch "hl.dsp.window.center({ window = \"$w\" })" >/dev/null 2>&1 || true
       break
     fi

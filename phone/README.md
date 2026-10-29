@@ -11,11 +11,13 @@ screenshots.
 phone/dev/run-desktop
 ```
 
-This opens a nested Hyprland in a 600x1300 window (the Pixel 7 Pro's 13:6
-shape, at 480x1040 logical pixels like the real phone) and runs the shell
-inside it. It uses a private home directory under `~/android/phone-dev/home`
-that links your current Omarchy theme and this directory's plugins, so your
-real `~/.config/omarchy` is never touched. Plugin edits hot-reload.
+This opens a nested Hyprland in a window of the Pixel 7 Pro's 13:6 shape, at
+480x1040 logical pixels like the real phone, and runs the shell inside it.
+The window is 600x1300 where the screen has room, and otherwise as large as
+fits: the layout stays the same, with smaller and softer text. It uses a
+private home directory under `~/android/phone-dev/home` that links your
+current Omarchy theme and this directory's plugins, so your real
+`~/.config/omarchy` is never touched. Plugin edits hot-reload.
 
 Inside the window, `ALT+Return` opens a terminal.
 
