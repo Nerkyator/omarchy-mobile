@@ -17,7 +17,9 @@ inside it. It uses a private home directory under `~/android/phone-dev/home`
 that links your current Omarchy theme and this directory's plugins, so your
 real `~/.config/omarchy` is never touched. Plugin edits hot-reload.
 
-Inside the window, `ALT+Return` opens a terminal.
+Inside the window, `ALT+Return` opens a terminal. The window never locks on
+its own, as in a phone emulator: the harness turns the profile's idle lock
+off in its copy of `shell.json`.
 
 The session has the package's `bin/` on `PATH`, so apps launch through
 `omamobile-launch` as on the phone. The helpers that would act on this

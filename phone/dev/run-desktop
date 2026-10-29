@@ -45,8 +45,19 @@ find "$LAYOUT" -mindepth 1 -maxdepth 1 -xtype l -delete
 mkdir -p "$FAKE_HOME/.config/omarchy" "$FAKE_HOME/.local/state/omarchy"
 ln -sfn "$HOME/.local/state/omarchy/current" "$FAKE_HOME/.local/state/omarchy/current"
 ln -sfn "$ROOT/packages/omamobile-shell/plugins" "$FAKE_HOME/.config/omarchy/plugins"
-# Copied, not linked: the shell writes to shell.json when settings change
-cp "$ROOT/packages/omamobile-shell/profile/shell.json" "$FAKE_HOME/.config/omarchy/shell.json"
+# Copied, not linked: the shell writes to shell.json when settings change.
+# Without the idle lock (0 is off), as a phone emulator never locks: the
+# profile's lock after 60 s would lock the window behind this computer's
+# account password, and omarchy-system-lock's cleanup reaches the desktop.
+python3 -I - "$ROOT/packages/omamobile-shell/profile/shell.json" "$FAKE_HOME/.config/omarchy/shell.json" <<'EOF'
+import json, sys
+with open(sys.argv[1]) as f:
+    config = json.load(f)
+config.setdefault("idle", {})["lock"] = 0
+with open(sys.argv[2], "w") as f:
+    json.dump(config, f, indent=2)
+    f.write("\n")
+EOF
 
 # Once the nested window appears on the desktop, float it at the phone's
 # 13:6 aspect. Uses the desktop compositor's own dispatchers; no config changes.
