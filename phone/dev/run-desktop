@@ -87,5 +87,15 @@ export PATH="$ROOT/phone/dev/bin:$ROOT/packages/omamobile-shell/bin:$PATH"
 # dev/bin's omarchy-shell takes it from PHONE_DEV_OMARCHY_PATH.
 export OMARCHY_PATH="$LAYOUT" PHONE_DEV_OMARCHY_PATH="$LAYOUT"
 
-export PHONE_DEV_SHELL_CMD="env HOME=$FAKE_HOME OMARCHY_PATH=$OMARCHY_PATH quickshell -p $OMARCHY_PATH/shell"
+# The shell has its own HOME, and Omarchy's app library looks in
+# $HOME/.local/share for which entries are hidden and for icons (and,
+# without uwsm's XDG_DATA_HOME, for this computer's own entries, Omarchy's
+# web apps among them). So the real data directory goes first in the
+# shell's XDG_DATA_DIRS, for omamobile-launch too, and its entries win over
+# the system's as they do on the desktop.
+data_dirs="${XDG_DATA_HOME:-$HOME/.local/share}:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
+# Hyprland runs it with sh -c
+printf -v PHONE_DEV_SHELL_CMD '%q ' env HOME="$FAKE_HOME" OMARCHY_PATH="$OMARCHY_PATH" \
+  XDG_DATA_DIRS="$data_dirs" quickshell -p "$OMARCHY_PATH/shell"
+export PHONE_DEV_SHELL_CMD
 exec env -u HYPRLAND_INSTANCE_SIGNATURE Hyprland -c "$ROOT/phone/dev/hyprland.lua"
