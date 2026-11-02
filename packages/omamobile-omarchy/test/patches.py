@@ -399,6 +399,7 @@ def real_package(t):
            "real omarchy: %s refuses on a phone before it touches pacman (0016)" % name)
         ok("RELEASES.md section 5.4" in text, "real omarchy: %s points at RELEASES 5.4" % name)
     screensaver_launcher(t, os.path.join(root, "usr/bin/omarchy-launch-screensaver"))
+    about_layout(t, os.path.join(root, "usr/bin/omarchy-launch-about"))
     notification_phrasing(t, os.path.join(root, "usr/bin/omarchy-notification-send"),
                           os.path.join(ex, "usr/bin/omarchy-notification-send"))
     lock_fingerprint_probe(t, root)
@@ -759,6 +760,95 @@ def screensaver_launcher(t, launcher):
     p.terminate()
     p.wait(timeout=20)
     ok(osk() == "true" and not os.path.exists(marker), "0006: a launcher stopped by a signal turns the keyboard back on")
+
+
+def about_layout(t, launcher):
+    """Patch 0028's About layout, rendered in a pseudo-terminal of each size
+    against a fake fastfetch whose facts are 54 columns by 29 rows, as
+    Omarchy's are: the logo beside the facts where the width allows, above
+    them where the height allows, otherwise the facts alone. A phone's About
+    window is 65 columns by 56 rows."""
+    import fcntl
+    import pty
+    import select
+    import struct
+    import termios
+    fakes = os.path.join(t, "about-fakes")
+    home = os.path.join(t, "about-home")
+    branding = os.path.join(home, ".config/omarchy/branding")
+    os.makedirs(fakes)
+    os.makedirs(branding)
+    log = os.path.join(t, "about-log")
+
+    def fake(name, body):
+        path = os.path.join(fakes, name)
+        with open(path, "w") as f:
+            f.write("#!/bin/bash\n" + body + "\n")
+        os.chmod(path, 0o755)
+
+    # The measurement reads fastfetch through a pipe, a repaint draws on the terminal.
+    fake("fastfetch", '[[ -t 1 ]] && echo "draw $*" >> "$FAKE_LOG" || echo "measure $*" >> "$FAKE_LOG"\n'
+                      '[[ $* == "--logo none" && ! -t 1 ]] || exit 0\n'
+                      'for _ in $(seq 28); do printf "%54s\\n" x; done\necho')
+    fake("clear", "exit 0")
+    fake("hyprctl", "exit 0")  # no window, so the fit gives up
+
+    def logo(cols, rows):
+        with open(os.path.join(branding, "about.txt"), "w") as f:
+            f.write(("█" * cols + "\n") * rows)
+
+    def render(rows, cols, then=None):
+        """The launcher's calls to fastfetch, for a window of rows x cols, and
+        after a resize to then (rows, cols) when given."""
+        open(log, "w").close()
+        master, slave = pty.openpty()
+        fcntl.ioctl(master, termios.TIOCSWINSZ, struct.pack("HHHH", rows, cols, 0, 0))
+        env = {"PATH": fakes + ":/usr/bin:/bin", "HOME": home, "TERM": "dumb", "FAKE_LOG": log}
+        p = subprocess.Popen(["bash", launcher, "--render"], stdin=slave, stdout=slave, stderr=slave,
+                             env=env, start_new_session=True)
+        os.close(slave)
+
+        def draws():
+            return [l for l in open(log).read().splitlines() if l.startswith("draw")]
+
+        def wait(count):
+            deadline = time.monotonic() + 10
+            while len(draws()) < count and time.monotonic() < deadline and p.poll() is None:
+                if select.select([master], [], [], 0.05)[0]:
+                    try:
+                        os.read(master, 4096)
+                    except OSError:
+                        break
+
+        wait(1)
+        if then:
+            fcntl.ioctl(master, termios.TIOCSWINSZ, struct.pack("HHHH", then[0], then[1], 0, 0))
+            wait(2)
+        os.write(master, b"q")  # any key closes About
+        try:
+            p.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            p.kill()
+            p.wait()
+        os.close(master)
+        return [l.rstrip() for l in open(log).read().splitlines()]
+
+    logo(54, 26)  # Omarchy's own logo
+    ok(render(56, 65) == ["measure --logo none", "draw --logo none"],
+       "0028: a phone's About shows the facts alone where Omarchy's logo above them would run past the bottom")
+    ok(render(59, 65) == ["measure --logo none", "draw --logo-position top"]
+       and render(58, 65) == ["measure --logo none", "draw --logo none"],
+       "0028: the logo goes above the facts from 59 rows (2 + 26 + 1 + 29, and the cursor's row)")
+    ok(render(40, 116) == ["measure --logo none", "draw"] and render(80, 115) == ["measure --logo none", "draw --logo-position top"],
+       "0028: side by side from 116 columns (2 + 54 + 6 + 54), stacked below that")
+    ok(render(80, 55) == ["measure --logo none", "draw --logo none"],
+       "0028: a window narrower than the logo shows the facts alone")
+    logo(27, 13)  # the half-scale logo the phone seeds
+    ok(render(56, 65, then=(22, 140)) == ["measure --logo none", "draw --logo-position top", "draw"],
+       "0028: a 27x13 logo fits above the facts on a phone, and side by side once it turns on its side")
+    os.makedirs(os.path.join(home, ".config/fastfetch"))
+    open(os.path.join(home, ".config/fastfetch/config.jsonc"), "w").close()
+    ok(render(56, 65) == ["draw"], "0028: a user-level fastfetch config keeps its own layout, unmeasured")
 
 
 # Omarchy 4.0.6's notification texts (headline, body) and what a phone shows
