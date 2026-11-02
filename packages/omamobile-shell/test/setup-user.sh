@@ -34,6 +34,9 @@ printf 'local omarchy_gdk_scale = 2\nlocal omarchy_monitor_scale = "auto"\n' >"$
 mkdir -p "$H/.config/foot"
 printf '[main]\nfont=JetBrainsMono Nerd Font:size=9\npad=14x14\n\n[scrollback]\nlines=10000\nmultiplier=7.0\n\n[cursor]\nstyle=block\n' \
   >"$H/.config/foot/foot.ini"
+# Omarchy's About logo (its icon.txt), seeded for the user as Omarchy does
+printf '%s\n' '████████' '████████' '██    ██' '██    ██' '████████' '████████' >"$t/icon.txt"
+mkdir -p "$H/.config/omarchy/branding"; cp "$t/icon.txt" "$H/.config/omarchy/branding/about.txt"
 # Omarchy's shipped extension file starts like this
 printf '{\n  // Extend the Quickshell Omarchy menu with JSONC.\n  // "personal": {"icon":"","label":"Personal"},\n}\n' \
   >"$H/.config/omarchy/extensions/omarchy-menu.jsonc"
@@ -54,7 +57,7 @@ for b in gs201-cheetah:gs201 zumapro-tegu:zumapro; do
 done
 run() {
   env -i HOME="${RUN_HOME:-$H}" PATH="$F:/usr/bin:/bin" XDG_RUNTIME_DIR="$t" OMAMOBILE_SHELL_SHARE="$pkg" OMAMOBILE_SYSTEM_APPLICATIONS="$A" \
-    OMAMOBILE_DT="${RUN_DT:-$t/dt-gs201-cheetah}" OMAMOBILE_SQUEEKBOARD_SHARE="$pkg/squeekboard/keyboards" \
+    OMAMOBILE_OMARCHY_ICON="$t/icon.txt" OMAMOBILE_DT="${RUN_DT:-$t/dt-gs201-cheetah}" OMAMOBILE_SQUEEKBOARD_SHARE="$pkg/squeekboard/keyboards" \
     GSETTINGS_NO_CLICK_POLICY="${GSETTINGS_NO_CLICK_POLICY:-}" \
     bash bin/omamobile-setup-user "$@" >"$t/out" 2>&1 || { cat "$t/out"; fail "omamobile-setup-user runs"; }
 }
@@ -104,6 +107,28 @@ run
 [[ ! -e $U/org.gnome.DiskUtility.desktop ]] || fail "an override the user removed stays removed"
 grep -qx 'NoDisplay=true' "$U/foot-server.desktop" || fail "an app installed later is hidden"
 pass "desktop and admin apps are hidden once each, when installed, and a user's choice is kept"
+
+# About: Omarchy's own logo becomes the phone's half-scale one, once; a
+# logo the user branded stays, and a user without one gets it on the login
+# that finds Omarchy's
+logo=$H/.config/omarchy/branding/about.txt
+cmp -s "$logo" "$pkg/branding/about.txt" || fail "Omarchy's About logo is replaced with the phone's"
+cp "$t/icon.txt" "$logo"; run
+cmp -s "$logo" "$t/icon.txt" || fail "a logo reset after the first login stays Omarchy's"
+hb=$t/about-own; mkdir -p "$hb/.config/hypr" "$hb/.config/omarchy/extensions" "$hb/.config/omarchy/branding"
+cp "$H"/.config/hypr/{looknfeel,autostart,monitors}.lua "$hb/.config/hypr/"
+printf 'mine\n' >"$hb/.config/omarchy/branding/about.txt"
+RUN_HOME=$hb run
+[[ $(cat "$hb/.config/omarchy/branding/about.txt") == mine ]] || fail "a logo the user branded stays"
+hl=$t/about-later; mkdir -p "$hl/.config/hypr" "$hl/.config/omarchy/extensions"
+cp "$H"/.config/hypr/{looknfeel,autostart,monitors}.lua "$hl/.config/hypr/"
+RUN_HOME=$hl run
+[[ ! -e $hl/.config/omarchy/branding/about.txt && ! -e $hl/.local/state/omarchy/done/omamobile-about-logo ]] \
+  || fail "a user without an About logo gets none, and the step waits"
+mkdir -p "$hl/.config/omarchy/branding"; cp "$t/icon.txt" "$hl/.config/omarchy/branding/about.txt"
+RUN_HOME=$hl run
+cmp -s "$hl/.config/omarchy/branding/about.txt" "$pkg/branding/about.txt" || fail "a logo that appears later is replaced at the next login"
+pass "About: Omarchy's logo becomes the phone's half-scale one once, a user's own logo stays"
 
 # Idle: a new user gets the profile's block and the screensaver toggle
 idle() { python3 -I -c 'import json, sys; print(json.dumps(json.load(open(sys.argv[1])).get("idle")))' "$1/.config/omarchy/shell.json"; }

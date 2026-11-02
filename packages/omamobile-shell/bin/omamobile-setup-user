@@ -342,6 +342,18 @@ if omarchy-done ensure omamobile-screensaver; then
   install -Dm644 "$share/branding/foot-screensaver.ini" ~/.config/foot/screensaver.ini
 fi
 
+# About for a portrait phone: Omarchy's logo at half scale (27x13, the same
+# shape drawn with half blocks) fits above the system facts in a 480 px
+# window, 65 columns by 56 rows (patch 0028 stacks them); with Omarchy's
+# 54x26 logo there is room for the facts alone. Only over Omarchy's own
+# logo, so a logo the user branded stays. Once.
+about=~/.config/omarchy/branding/about.txt
+omarchy_logo=${OMAMOBILE_OMARCHY_ICON:-/usr/share/omarchy/icon.txt}
+if [[ -f $about && -f $omarchy_logo ]] && omarchy-done ensure omamobile-about-logo &&
+  [[ $(<"$about") == "$(<"$omarchy_logo")" ]]; then
+  install -Dm644 "$share/branding/about.txt" "$about"
+fi
+
 # The terminal on a touch screen (TOUCH-PLAN 2.9): Omarchy's 14 px padding
 # costs 28 of 480 px, its scrollback multiplier of 7 makes drag-scrolling
 # jump, and a shorter long press starts a selection sooner. Once, in the

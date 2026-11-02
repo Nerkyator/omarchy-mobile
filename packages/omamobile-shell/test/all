@@ -959,6 +959,27 @@ pass "session environment"
 
 bash -n bin/omamobile-setup-user || fail "omamobile-setup-user parses"
 bash test/setup-user.sh || fail "omamobile-setup-user against a scratch home"
+# The phone's About logo: 13 rows of at most 27 cells in full and half
+# blocks, and, where Omarchy's icon.txt is installed, exactly Omarchy's
+# logo at half scale (each cell drawn 2x2 gives it back).
+icon=${OMARCHY_ICON:-/usr/share/omarchy/icon.txt}
+logo=$(python3 -I - branding/about.txt "$icon" <<'PY'
+import os, sys
+rows = open(sys.argv[1], encoding="utf-8").read().splitlines()
+assert len(rows) == 13 and max(map(len, rows)) <= 27 and set("".join(rows)) <= set("█▌▐ "), "shape"
+if os.path.exists(sys.argv[2]):
+    cell = {"█": "██", "▌": "█ ", "▐": " █", " ": "  "}
+    full = ["".join(cell[c] for c in row).rstrip() for row in rows for _ in (0, 1)]
+    assert full == [r.rstrip() for r in open(sys.argv[2], encoding="utf-8").read().splitlines()], "Omarchy's logo"
+    print("omarchy")
+PY
+) || fail "branding/about.txt is Omarchy's logo at half scale"
+if [[ $logo == omarchy ]]; then
+  pass "the phone's About logo is Omarchy's at half scale"
+else
+  pass "the phone's About logo is 27x13 in full and half blocks"
+  pass "the phone's About logo is Omarchy's at half scale # SKIP no $icon"
+fi
 bash -n bin/omamobile-osk-guard || fail "omamobile-osk-guard parses"
 # The widget crash guard counts a shell death inside the same boot as a
 # crash. A widget still "loading" from another boot (reboot, shutdown, dead
